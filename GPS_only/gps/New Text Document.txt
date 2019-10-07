@@ -1,0 +1,193 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <NMEAGPS.h>
+#include <NeoSWSerial.h>
+#include <Adafruit_SSD1306.h>
+
+#define OLED_RESET 4
+Adafruit_SSD1306 Display(OLED_RESET);
+
+static const int RXPin = 4, TXPin = 3;
+
+// The NeoGPS object
+NMEAGPS gps;
+
+// The serial connection to the GPS device
+NeoSWSerial gpsPort(RXPin, TXPin);
+
+int r = 0;        //variable for fuel gauge
+int G1 = 0;       //gear 1
+int G2 = 1;       //gear 2
+int G3 = 2;       //gear 3
+int G4 = 5;       //gear 4
+int G5 = 6;       //gear 5
+
+void setup()   {
+
+  gpsPort.begin(9600);
+
+  pinMode(G1, INPUT);           // set G1 to input
+  pinMode(G2, INPUT);           // set G2 to input
+  pinMode(G3, INPUT);           // set G3 to input
+  pinMode(G4, INPUT);           // set G4 to input
+  pinMode(G5, INPUT);           // set G5 to input
+  digitalWrite(G1, HIGH);       // activate pullup risistor
+  digitalWrite(G2, HIGH);       // activate pullup risistor
+  digitalWrite(G3, HIGH);       // activate pullup risistor
+  digitalWrite(G4, HIGH);       // activate pullup risistor
+  digitalWrite(G5, HIGH);       // activate pullup risistor
+
+  Display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
+
+  Display.clearDisplay();
+  Display.display();
+
+  DrawConstants();
+
+}
+
+
+void loop() {
+
+  if (gps.available( gpsPort )){          //following code display the GPS part
+    gps_fix fix = gps.read();
+
+    // Make sure we have a valid time
+    if (fix.valid.time) {
+      adjustTime( fix.dateTime ); // to local time
+      Display.setTextSize(1);
+      Display.setTextColor(WHITE);
+      Display.setCursor(0, 9);
+      Display.println( F("Clock") );
+      Display.setCursor(34, 9);
+      Display.println(fix.dateTime.hours);
+      Display.setCursor(44, 9);
+      Display.println( ':' );
+      Display.setCursor(48, 9);
+      Display.println(fix.dateTime.minutes);
+    }
+
+    // Make sure we have a valid speed value (low speeds not accurate)
+    if (fix.valid.speed && (fix.speed_kph() > 5)) {
+      int SPEED = fix.speed_kph();          //convert the speed to zero decimal
+   
+      Display.setTextSize(5);
+      Display.setTextColor(WHITE);
+      Display.setCursor(0, 28);
+      Display.println(SPEED);
+      Display.setTextSize(1);
+      Display.setCursor(0, 18);
+      Display.println( F("Sat") );
+      Display.setCursor(34, 18);
+      Display.println(fix.satellites);
+      Display.display();
+    }
+
+    // Only check once per second, when a new GPS fix is available
+    r = analogRead(A0);                     //the following code display the fuel gauge
+    r = r / 7.98;
+
+    //draw the bar graph
+    Display.fillRect(r + 30, 0, 97 - r, 4, BLACK); // (r, 50, 128 - r, 10, BLACK)
+    Display.fillRect(30, 0, r, 4, WHITE); //(3, 50, r, 10, WHITE)
+    Display.drawPixel(54, 4, 1);
+    Display.drawPixel(78, 4, 1);
+    Display.drawPixel(79  , 4, 1);
+    Display.drawPixel(103, 4, 1);
+
+    if (digitalRead (G1) == 0)              //the last bit of code display the gear i'm in
+    {
+      Display.fillRect(100,25,20,30,BLACK);
+      Display.setTextSize(3);
+      Display.setTextColor(WHITE);
+      Display.setCursor(100, 25);
+      Display.println( '1' );
+    }
+
+    else if (digitalRead (G2) == 0)
+    {
+      Display.fillRect(100,25,20,30,BLACK);
+      Display.setTextSize(3);
+      Display.setTextColor(WHITE);
+      Display.setCursor(100, 25);
+      Display.println( '2' );
+    }
+
+    else if (digitalRead (G3) == 0)
+    {
+      Display.fillRect(100,25,20,30,BLACK);
+      Display.setTextSize(3);
+      Display.setTextColor(WHITE);
+      Display.setCursor(100, 25);
+      Display.println( '3' );
+    }
+
+    else if (digitalRead (G4) == 0)
+    {
+      Display.fillRect(100,25,20,30,BLACK);
+      Display.setTextSize(3);
+      Display.setTextColor(WHITE);
+      Display.setCursor(100, 25);
+      Display.println( '4' );
+    }
+
+    else if (digitalRead (G5) == 0)
+    {
+      Display.fillRect(100,25,20,30,BLACK);
+      Display.setTextSize(3);
+      Display.setTextColor(WHITE);
+      Display.setCursor(100, 25);
+      Display.println( '5' );
+    }
+
+    else
+    {
+      Display.fillRect(100,25,20,30,BLACK);
+      Display.setTextSize(3);
+      Display.setTextColor(WHITE);
+      Display.setCursor(100, 25);
+      Display.println( 'N' );
+    }
+
+    // now that the display is build, display it...
+    Display.display();
+  }
+}
+
+void DrawConstants(void) {                  // this void display the constants on the display
+
+  Display.setTextSize(1);
+  Display.setTextColor(WHITE);
+  Display.setCursor(90, 57);
+  Display.println( F("Km/h") );
+
+  Display.setTextSize(1);
+  Display.setTextColor(WHITE);
+  Display.setCursor(96, 10);
+  Display.println( F("Gear") );
+
+  Display.drawRect(29,0,99,6,1);
+ 
+  Display.setTextSize(1);
+  Display.setTextColor(WHITE);
+  Display.setCursor(0, 0); //19
+  Display.println( F("Fuel") );
+  Display.display();
+
+}
+
+static void adjustTime( NeoGPS::time_t & UTCtime )
+{
+  NeoGPS::clock_t seconds = UTCtime;
+
+  // Set these values to the offset of your timezone from GMT
+  static const int32_t         zone_hours   = +2L;
+  static const int32_t         zone_minutes =  0L;
+  static const NeoGPS::clock_t zone_offset  =
+                    zone_hours   * NeoGPS::SECONDS_PER_HOUR +
+                    zone_minutes * NeoGPS::SECONDS_PER_MINUTE;
+
+  seconds += zone_offset; // adjust!
+
+  UTCtime = seconds; // convert back to a structure
+}

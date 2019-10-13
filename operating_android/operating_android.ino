@@ -78,14 +78,15 @@ int Oradiox = 0,Oradioy = 0,Oradioz = 0;
 int Xthrotle = 0;
 int OVRA = 0;
 //Ocomande
-int Ocomandex,Ocomandey,Ocomandez;
+int Ocz1 = 0;
+float Ocomandex,Ocomandey,Ocomandez;
 //Oservo
 float Oservox,Oservoy,Oservoz;
 
 
 int DOx = 0, DOy = 0, DOz = 0;
 int IDOx = 0,IDOy = 0,IDOz = 0;
-float Kx1 = 2.0,Ky1 = 2.0,Kz1 = 2.0;
+float Kx1 = 2.0,Ky1 = 2.0,Kz1 = 1.0;
 float Kx2 = 0.2,Ky2 = 0.2,Kz2 = 0.2;
 
 
@@ -243,7 +244,6 @@ void loop() {
 
       dt = t-millis();
       t += dt;
-
     
       if (abs(rc_values[RC_CH5]-2000)<env ){//switch high
         // full radio control 
@@ -265,68 +265,58 @@ void loop() {
         //full control from the gyro    
         Ocomandex = 0;
         Ocomandey = 0;
-        Ocomandez = analogRead(A3)*90/512-90ss;
+ 
+        Ocz1 = float(analogRead(A3))*180.0/1024.0-90;
+        Ocomandez += 0.01*(Ocz1-Ocomandez);
       }
-
 
       
       DOx = Ocomandex-Ox;
       IDOx +=  DOx * dt/1000 ;
-      
-      //limit integral to 30 degs
-      if (IDOx> 30.0/Kx2 ){
+      if (IDOx> 30.0/Kx2 ){//limit integral to 30 degs
         IDOx = 30.0/Kx2;
       }
       else if(IDOx< -30.0/Kx2 ){
         IDOx = -30.0/Kx2;
       }
-      
       Oservox =  Kx1 * DOx +  Kx2 * IDOx;
-
       if (Oservox>90){Oservox = 90;}//limit servo range
       else if (Oservox<-90){Oservox = -90;}
 
       
       DOy = Ocomandey-Oy;
       IDOy +=  DOy * dt/1000 ;
-      
-      //limit integral to 30 degs
-      if (IDOy> 30.0/Ky2 ){
+      if (IDOy> 30.0/Ky2 ){//limit integral to 30 degs
         IDOy = 30.0/Ky2;
       }
       else if(IDOy< -30.0/Ky2 ){
         IDOy = -30.0/Ky2;
       }
-      
       Oservoy =  Ky1 * DOy +  Ky2 * IDOy;
 
+      
       if (Oservoy>90){Oservoy = 90;}//limit servo range
       else if (Oservoy<-90){Oservoy = -90;}
-
       DOz = Ocomandez-Oz;
       IDOz +=  DOz * dt/1000 ;
-      
-      //limit integral to 30 degs
-      if (IDOz> 30.0/Kz2 ){
+      if (IDOz> 30.0/Kz2 ){//limit integral to 30 degs
         IDOz = 30.0/Kz2;
       }
       else if(IDOz< -30.0/Kz2 ){
         IDOz = -30.0/Kz2;
       }
-      
       Oservoz =  Kz1 * DOz +  Kz2 * IDOz;
-
       if (Oservoz>90){Oservoz = 90;}//limit servo range
       else if (Oservoz<-90){Oservoz = -90;}
 
 
-      Serial.print("OX : ");Serial.print(Ox);Serial.print("    ");
-      Serial.print("OservoX : ");Serial.print(Oservox,0);Serial.println("    "); 
-      Serial.print("OY : ");Serial.print(Oy);Serial.print("    ");
-      Serial.print("OservoY : ");Serial.print(Oservoy,0);Serial.println("    "); 
-      Serial.print("OZ : ");Serial.print(Oz);Serial.print("    ");
+      //Serial.print("OX : ");Serial.print(Ox);Serial.print("    ");
+      //Serial.print("OservoX : ");Serial.print(Oservox,0);Serial.println("    "); 
+      //Serial.print("OY : ");Serial.print(Oy);Serial.print("    ");
+      //Serial.print("OservoY : ");Serial.print(Oservoy,0);Serial.println("    "); 
+      //Serial.print("OZ : ");Serial.print(Oz);Serial.print("    ");
       Serial.print("OZ co: ");Serial.print(Ocomandez);Serial.print("    ");   
-      Serial.print("OservoZ : ");Serial.print(Oservoz,0);Serial.println("    "); 
+      //Serial.print("OservoZ : ");Serial.print(Oservoz,0);Serial.println("    "); 
       Serial.println("");
       
       myservoYaw.write(Oservoz+90); 

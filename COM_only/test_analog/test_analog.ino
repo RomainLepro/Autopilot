@@ -10,7 +10,8 @@
 //#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
 //Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define roll 10
+#define roll 5
+#define pitch 6
 int t,dt,val;
 
 
@@ -26,6 +27,7 @@ void loop(){
   {val = 0;}
   Serial.println(val);
   analogWrite(roll,val/10);
+  analogWrite(pitch,val/10);
   //display.clearDisplay();
   //display.setTextSize(1);             // Normal 1:1 pixel scale
   //display.setTextColor(WHITE);        // Draw white text
